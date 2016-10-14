@@ -2,15 +2,12 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<title>D3: Force layout</title>
+		<title>The KickAss Repo</title>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
 	</head>
-	<body>
+	<body style="background-color:black;">
     <audio id="audioElement" src="./audio.mp3"></audio>
-    <div>
-      <button onclick="document.getElementById('audioElement').play()">Play the Audio</button>
-      <button onclick="document.getElementById('audioElement').pause()">Pause the Audio</button>
-    </div>
 
     <script type="text/javascript">
       var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -20,42 +17,43 @@
 
       audioSrc.connect(analyser);
       audioSrc.connect(audioCtx.destination);
+
+      // var datasetsize = Math.floor((Math.random() * 10) + 5);
+      var datasetsize = 11;
+      function generateDataSet() {
+        var nodes = new Array;
+        var edges = new Array;
+        for (var j=0; j<datasetsize; ++j) {
+            var nodeelem = { name: j.toString() };
+            nodes.push(nodeelem);
+            for (var k=j; k<datasetsize; ++k) {
+              // var suddendeath = Math.floor((Math.random() * 10) + 1);
+              // if (suddendeath > 5) {
+                var edgeelem = { source: j, target: k };
+                edges.push(edgeelem);
+              // }
+            }
+        }
+        var dataset = {nodes: nodes, edges: edges};
+        return dataset;
+      }
     </script>
 
 
 		<script type="text/javascript">
 
 			//Width and height
-			var w = 500;
-			var h = 400;
+			var w = $(window).width();
+			var h = $(window).height();
 
 			//Original data
-			var dataset = {
-				nodes: [
-					{ name: "One" },
-					{ name: "Two" },
-					{ name: "Three" },
-					{ name: "Four" },
-					{ name: "Five" }
-				],
-				edges: [
-					{ source: 0, target: 1 },
-					{ source: 0, target: 2 },
-					{ source: 0, target: 3 },
-					{ source: 0, target: 4 },
-          { source: 1, target: 2 },
-          { source: 1, target: 3 },
-          { source: 1, target: 4 },
-          { source: 2, target: 3 },
-          { source: 2, target: 4 },
-          { source: 3, target: 4 },
-				]
-			};
+			var dataset = generateDataSet();
 			var force = d3.layout.force()
 								 .nodes(dataset.nodes)
 								 .links(dataset.edges)
 								 .size([w, h])
-								 .linkDistance([50])
+								 .linkDistance([20])
+								 .linkStrength([1])
 								 .charge([-100])
 								 .start();
 
@@ -71,7 +69,7 @@
 				.enter()
 				.append("line")
 				.style("stroke", "#fff")
-				.style("stroke-width", 1);
+				.style("stroke-width", 2);
 
 			var nodes = svg.selectAll("circle")
 				.data(dataset.nodes)
@@ -80,8 +78,7 @@
 				.attr("r", 10)
 				.style("fill", function(d, i) {
 					return colors(i);
-				})
-				.call(force.drag);
+				});
 
 			force.on("tick", function() {
 
@@ -100,13 +97,30 @@
         requestAnimationFrame(renderCharge);
 
         analyser.getByteFrequencyData(frequencyData);
+
         var chargeValue = frequencyData[0];
-        chargeValue = -100*chargeValue;
+
+				svg.selectAll("circle")
+					.data(dataset.nodes)
+					.attr("r", function(d) {
+						var rad = Math.floor(((chargeValue/10)-10)*3);
+						if (rad<=0)
+							return 1;
+						else
+							return Math.min(rad,30);
+					});
+
+				if (chargeValue > 100) {
+        	chargeValue = (chargeValue-100)*(-300);
+				} else {
+					chargeValue = -1000;
+				}
         console.log(chargeValue);
 
         force.charge([chargeValue]);
         force.start();
       }
+			document.getElementById('audioElement').play()
 
       renderCharge();
 		</script>
