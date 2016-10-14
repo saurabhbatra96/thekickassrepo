@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>D3: Force layout</title>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+	</head>
+	<body>
+    <audio id="audioElement" src="./audio.mp3"></audio>
+    <div>
+      <button onclick="document.getElementById('audioElement').play()">Play the Audio</button>
+      <button onclick="document.getElementById('audioElement').pause()">Pause the Audio</button>
+    </div>
+
+    <script type="text/javascript">
+      var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var audioElement = document.getElementById('audioElement');
+      var audioSrc = audioCtx.createMediaElementSource(audioElement);
+      var analyser = audioCtx.createAnalyser();
+
+      audioSrc.connect(analyser);
+      audioSrc.connect(audioCtx.destination);
+    </script>
+
+
+		<script type="text/javascript">
+
+			//Width and height
+			var w = 500;
+			var h = 400;
+
+			//Original data
+			var dataset = {
+				nodes: [
+					{ name: "One" },
+					{ name: "Two" },
+					{ name: "Three" },
+					{ name: "Four" },
+					{ name: "Five" }
+				],
+				edges: [
+					{ source: 0, target: 1 },
+					{ source: 0, target: 2 },
+					{ source: 0, target: 3 },
+					{ source: 0, target: 4 },
+          { source: 1, target: 2 },
+          { source: 1, target: 3 },
+          { source: 1, target: 4 },
+          { source: 2, target: 3 },
+          { source: 2, target: 4 },
+          { source: 3, target: 4 },
+				]
+			};
+			var force = d3.layout.force()
+								 .nodes(dataset.nodes)
+								 .links(dataset.edges)
+								 .size([w, h])
+								 .linkDistance([50])
+								 .charge([-100])
+								 .start();
+
+			var colors = d3.scale.category10();
+
+			var svg = d3.select("body")
+						.append("svg")
+						.attr("width", w)
+						.attr("height", h);
+
+			var edges = svg.selectAll("line")
+				.data(dataset.edges)
+				.enter()
+				.append("line")
+				.style("stroke", "#fff")
+				.style("stroke-width", 1);
+
+			var nodes = svg.selectAll("circle")
+				.data(dataset.nodes)
+				.enter()
+				.append("circle")
+				.attr("r", 10)
+				.style("fill", function(d, i) {
+					return colors(i);
+				})
+				.call(force.drag);
+
+			force.on("tick", function() {
+
+				edges.attr("x1", function(d) { return d.source.x; })
+					 .attr("y1", function(d) { return d.source.y; })
+					 .attr("x2", function(d) { return d.target.x; })
+					 .attr("y2", function(d) { return d.target.y; });
+
+				nodes.attr("cx", function(d) { return d.x; })
+					 .attr("cy", function(d) { return d.y; });
+
+			});
+
+      var frequencyData = new Uint8Array(1);
+      function renderCharge() {
+        requestAnimationFrame(renderCharge);
+
+        analyser.getByteFrequencyData(frequencyData);
+        var chargeValue = frequencyData[0];
+        chargeValue = -100*chargeValue;
+        console.log(chargeValue);
+
+        force.charge([chargeValue]);
+        force.start();
+      }
+
+      renderCharge();
+		</script>
+	</body>
+</html>
